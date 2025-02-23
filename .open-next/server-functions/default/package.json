@@ -1,0 +1,33 @@
+{
+	"name": "voting-app",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "next dev",
+		"build": "next build",
+		"start": "next start",
+		"lint": "next lint",
+		"pages:build": "next build",
+		"preview": "npm run build && wrangler pages dev",
+		"deploy": "npm run build && wrangler pages deploy ./out",
+		"build:worker": "opennextjs-cloudflare",
+		"dev:worker": "wrangler dev --port 8771",
+		"preview:worker": "npm run build:worker && npm run dev:worker",
+		"deploy:worker": "npm run build:worker && wrangler deploy"
+	},
+	"dependencies": {
+		"@opennextjs/cloudflare": "^0.5.3",
+		"next": "15.1.6",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0"
+	},
+	"devDependencies": {
+		"@cloudflare/next-on-pages": "^1.13.8",
+		"@cloudflare/workers-types": "^4.20250214.0",
+		"@eslint/eslintrc": "^3",
+		"eslint": "^9",
+		"eslint-config-next": "15.1.6",
+		"vercel": "^41.2.0",
+		"wrangler": "^3.109.2"
+	}
+}

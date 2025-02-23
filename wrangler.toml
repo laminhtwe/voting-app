@@ -1,0 +1,12 @@
+name = "voting-app"
+main = "src/worker.js"
+compatibility_date = "2025-02-22"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "poll-data"
+id = "e48c43123fd84f1a930deac42acbe6cf"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
