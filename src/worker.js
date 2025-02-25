@@ -1,69 +1,86 @@
 addEventListener('fetch', (event) => {
-  console.log('Fetch event received for:', event.request.url);
-  event.respondWith(handleRequest(event));
+  event.respondWith(handleRequest(event.request));
 });
 
-async function handleRequest(event) {
-  const request = event.request;
+async function handleRequest(request, env, ctx) {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
-  console.log('Processing request for pathname:', pathname);
-
-  // Handle root path (/)
   if (pathname === '/') {
     return new Response('Welcome to the voting app', {
       status: 200,
       headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' },
     });
-  }
-
-  // Handle favicon.ico
-  if (pathname === '/favicon.ico') {
+  } else if (pathname === '/favicon.ico') {
     return new Response('Favicon not found', {
       status: 404,
       headers: { 'Content-Type': 'text/plain' },
     });
+  } else if (pathname === '/api/vote/post') {
+    if (request.method === 'POST') {
+      return handleVotePost(request, env);
+    } else if (request.method === 'GET') {
+      if (url.searchParams.get('vote')) {
+        return handleVotePost(request, env);
+      } else {
+        return handleGetVotePost(env);
+      }
+    } else if (request.method === 'OPTIONS') {
+      // Handle CORS preflight requests
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        },
+      });
+    }
+    return new Response('Method Not Allowed', { status: 405 });
   }
-
-  // Handle all other paths
-  if (pathname === '/api/vote/post') {
-    return handleVotePost(request, event, event.env);
-  }
-
   return new Response('Not Found', {
     status: 404,
     headers: { 'Content-Type': 'text/plain' },
   });
 }
 
-// POST /api/vote/post - Record a vote
-async function handleVotePost(request, event, env) {
-  try {
-    const { vote } = await request.json();
-    if (!['A', 'B', 'C', 'D'].includes(vote)) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Invalid vote option' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-    // Use waitUntil to handle KV updates asynchronously
-    event.waitUntil(
-      (async () => {
-        let currentCount = await env['poll-data'].get(vote);
-        currentCount = currentCount ? parseInt(currentCount) : 0;
-        await env['poll-data'].put(vote, (currentCount + 1).toString());
-      })()
-    );
-    return new Response(
-      JSON.stringify({ success: true, message: 'Vote recorded' }),
-      { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-    );
-  } catch (error) {
-    console.error('POST error:', error);
-    return new Response(
-      JSON.stringify({ success: false, message: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+async function handleVotePost(request, env) {
+  let vote;
+  if (request.method === 'POST') {
+    const requestData = await request.json();
+    vote = requestData.vote;
+  } else if (request.method === 'GET') {
+    const url = new URL(request.url);
+    vote = url.searchParams.get('vote');
   }
+
+  if (!vote) {
+    return new Response('Bad Request: No vote option provided.', { status: 400 });
+  }
+
+  const currentVoteCount = (await poll_kv.get(vote)) || 0;
+  await poll_kv.put(vote, parseInt(currentVoteCount) + 1);
+
+  const updatedVoteCount = parseInt(currentVoteCount) + 1;
+  return new Response(JSON.stringify({ success: true, count: updatedVoteCount }), {
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
+
+async function handleGetVotePost(env) {
+  const votes = {};
+  votes['A'] = (await poll_kv.get('A')) || 0;
+  votes['B'] = (await poll_kv.get('B')) || 0;
+  votes['C'] = (await poll_kv.get('C')) || 0;
+  votes['D'] = (await poll_kv.get('D')) || 0;
+
+  return new Response(JSON.stringify(votes), {
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
 }

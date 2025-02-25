@@ -4,8 +4,8 @@ compatibility_date = "2025-02-22"
 workers_dev = true
 
 [[kv_namespaces]]
-binding = "poll-data"
-id = "e48c43123fd84f1a930deac42acbe6cf"
+binding = "poll_kv"
+id = "162a8e597ebc492d95c54ebaf003af9b"
 
 [observability]
 enabled = true
