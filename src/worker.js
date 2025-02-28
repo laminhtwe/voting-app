@@ -37,6 +37,12 @@ async function handleRequest(request, env, ctx) {
       });
     }
     return new Response('Method Not Allowed', { status: 405 });
+  } else if (pathname === '/api/vote') {
+    if (request.method === 'GET') {
+      return handleGetVotePost(env);
+    } else {
+      return new Response('Method Not Allowed', { status: 405 });
+    }
   } else if (pathname === '/api/vote/reset') {
     if (request.method === 'POST') {
       return handleResetVotes(env);
