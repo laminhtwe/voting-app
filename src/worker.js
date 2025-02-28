@@ -37,6 +37,12 @@ async function handleRequest(request, env, ctx) {
       });
     }
     return new Response('Method Not Allowed', { status: 405 });
+  } else if (pathname === '/api/vote/reset') {
+    if (request.method === 'POST') {
+      return handleResetVotes(env);
+    } else {
+      return new Response('Method Not Allowed', { status: 405 });
+    }
   }
   return new Response('Not Found', {
     status: 404,
@@ -78,6 +84,20 @@ async function handleGetVotePost(env) {
   votes['D'] = (await poll_kv.get('D')) || 0;
 
   return new Response(JSON.stringify(votes), {
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
+
+async function handleResetVotes(env) {
+  await poll_kv.put('A', 0);
+  await poll_kv.put('B', 0);
+  await poll_kv.put('C', 0);
+  await poll_kv.put('D', 0);
+
+  return new Response(JSON.stringify({ success: true, message: 'Votes reset successfully' }), {
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
